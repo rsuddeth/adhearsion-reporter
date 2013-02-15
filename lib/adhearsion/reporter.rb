@@ -11,14 +11,16 @@ module Adhearsion
     init :reporter do
       config = Adhearsion.config[:reporter]
       notifier = Toadhopper.new config.api_key, :notify_host => config.url
-      Events.register_callback(:exception) do |e|
-        response = notifier.post!(e)
-        if !response.errors.empty? || !(200..299).include?(response.status.to_i)
-          logger.error "Error posting exception to #{config.url}! Response code #{response.status}"
-          response.errors.each do |error|
-            logger.error "#{error}"
+      Adhearsion::Events.draw do
+        exception do |error|
+          response = notifier.post!(error)
+          if !response.errors.empty? || !(200..299).include?(response.status.to_i)
+            logger.error "Error posting exception to #{config.url}! Response code #{response.status}"
+            response.errors.each do |error|
+              logger.error "#{error}"
+            end
+            logger.warn "Original exception message: #{e.message}"
           end
-          logger.warn "Original exception message: #{e.message}"
         end
       end
     end
