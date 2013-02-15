@@ -1,8 +1,8 @@
 # encoding: utf-8
 require 'toadhopper'
 
-module Adhearsion
-  class Reporter < Plugin
+module Reporter
+  class Plugin < Adhearsion::Plugin
     config :reporter do
       api_key nil,                  :desc => "The Airbrake/Errbit API key"
       url     "http://airbrake.io", :desc => "Base URL for notification service"
