@@ -13,6 +13,7 @@ module Adhearsion
 
       def notify(ex)
         Pony.mail({
+          to: Adhearsion::Reporter.config.email.destination,
           subject: email_subject(ex),
           body: exception_text(ex)
         })
@@ -24,7 +25,7 @@ module Adhearsion
 
     private
       def email_subject(exception)
-        "[#{Adhearsion::Reporter.config.app_name}] Exception: #{exception.class} (#{exception.message})"
+        "[#{Adhearsion::Reporter.config.app_name}-#{environment}] Host: #{hostname} Exception: #{exception.class} (#{exception.message})"
       end
 
       def exception_text(exception)
@@ -32,6 +33,14 @@ module Adhearsion
         "\n\n#{exception.class} (#{exception.message}):\n" +
         exception.backtrace.join("\n") +
         "\n\n"
+      end
+
+      def environment
+        Adhearsion.config.environment.to_s.upcase
+      end
+
+      def hostname
+        Socket.gethostname
       end
     end
   end
