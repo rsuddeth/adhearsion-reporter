@@ -20,11 +20,12 @@ module Adhearsion
         api_key nil,                  desc: "The Airbrake/Errbit API key"
         url     "http://airbrake.io", desc: "Base URL for notification service"
         app_name "Adhearsion", desc: "Application name, used for reporting"
-        notifiers nil,
-          desc: "Collection of classes that will act as notifiers"
-        notifier Adhearsion::Reporter::AirbrakeNotifier,
-          desc: "The class that will act as the notifier. Built-in classes are Adhearsion::Reporter::AirbrakeNotifier and Adhearsion::Reporter::NewrelicNotifier",
-          transform: Proc.new { |v| const_get(v.to_s) }
+        notifiers [Adhearsion::Reporter::AirbrakeNotifier],
+          desc: "Collection of classes that will act as notifiers",
+          transform: Proc.new { |v| notifiers = v.split(','); notifiers = notifiers.each.map(&:to_s).map(&:const_get) }
+#        notifier Adhearsion::Reporter::AirbrakeNotifier,
+#          desc: "The class that will act as the notifier. Built-in classes are Adhearsion::Reporter::AirbrakeNotifier and Adhearsion::Reporter::NewrelicNotifier",
+#          transform: Proc.new { |v| const_get(v.to_s) }
         enable true, desc: "Whether to send notifications - set to false to disable all notifications globally (useful for testing)"
         excluded_environments [:development, :test], desc: "Skip reporting errors for the listed environments (comma delimited when set by environment variable", transform: Proc.new { |v| names = v.split(','); names = names.each.map &:to_sym }
         newrelic {
@@ -38,13 +39,12 @@ module Adhearsion
       end
 
       init :reporter do
-        Reporter.config.notifier.init
-        Events.register_callback(:exception) do |e, logger|
-          if not Reporter.config.notifiers
-            Reporter.config.notifier.instance.notify e
-          else
-            Reporter.config.notifiers.each do |notifier|
-              notifier.instance.notify e
+        if not Reporter.config.notifiers.nil?
+          notifiers = Reporter.config.notifiers
+          notifiers.each_with_index do |notifier, idx|
+            notifier.init
+            Events.register_callback(:exception) do |e, logger|
+              Reporter.config.notifiers[idx].instance.notify e
             end
           end
         end
