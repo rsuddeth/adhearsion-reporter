@@ -22,24 +22,24 @@ describe Adhearsion::Reporter do
     end
 
     before(:each) do
-      Adhearsion::Reporter.config.notifier = DummyNotifier
+      Adhearsion::Reporter.config.notifiers = [DummyNotifier]
       Adhearsion::Plugin.init_plugins
       Adhearsion::Events.trigger_immediately :exception, ExceptionClass.new
     end
 
     it "calls init on the notifier instance" do
-      expect(Adhearsion::Reporter.config.notifier.instance.initialized).to be(true)
+      expect(Adhearsion::Reporter.config.notifiers[0].instance.initialized).to be(true)
     end
 
     it "logs an exception event" do
       sleep 0.25
-      expect(Adhearsion::Reporter.config.notifier.instance.notified.class).to eq(ExceptionClass)
+      expect(Adhearsion::Reporter.config.notifiers[0].instance.notified.class).to eq(ExceptionClass)
     end
   end
 
   context "with a AirbrakeNotifier" do
     before(:each) do
-      Adhearsion::Reporter.config.notifier = Adhearsion::Reporter::AirbrakeNotifier
+      Adhearsion::Reporter.config.notifiers = [Adhearsion::Reporter::AirbrakeNotifier]
     end
 
     it "should initialize correctly" do
@@ -85,7 +85,7 @@ describe Adhearsion::Reporter do
 
   context "with a NewrelicNotifier" do
     before(:each) do
-      Adhearsion::Reporter.config.notifier = Adhearsion::Reporter::NewrelicNotifier
+      Adhearsion::Reporter.config.notifiers = [Adhearsion::Reporter::NewrelicNotifier]
     end
 
     it "should initialize correctly" do
@@ -108,8 +108,7 @@ describe Adhearsion::Reporter do
     let(:email_options) do
       {
         via: :sendmail,
-        to: 'recv@domain.ext',
-        from: 'send@domain.ext'
+        to: 'recv@domain.ext'
       }
     end
 
@@ -125,7 +124,7 @@ describe Adhearsion::Reporter do
     let(:error_message) { "Something bad" }
 
     before(:each) do
-      Adhearsion::Reporter.config.notifier = Adhearsion::Reporter::EmailNotifier
+      Adhearsion::Reporter.config.notifiers = [Adhearsion::Reporter::EmailNotifier]
       Adhearsion::Reporter.config.email = email_options
     end
 
@@ -139,10 +138,14 @@ describe Adhearsion::Reporter do
       event_error = ExceptionClass.new error_message
       event_error.set_backtrace(fake_backtrace)
 
+      hostname = Socket.gethostname
+      environment = Adhearsion.config.platform.environment.to_s.upcase
+
       Timecop.freeze(time_freeze) do
         expect(Pony).to receive(:mail).at_least(:once).with({
-          subject: "[#{Adhearsion::Reporter.config.app_name}] Exception: ExceptionClass (#{error_message})",
-          body: "#{Adhearsion::Reporter.config.app_name} reported an exception at #{time_freeze.to_s}\n\nExceptionClass (#{error_message}):\n#{event_error.backtrace.join("\n")}\n\n"
+          subject: "[#{Adhearsion::Reporter.config.app_name}-#{environment}] Host: #{hostname} Exception: ExceptionClass (#{error_message})",
+          body: "#{Adhearsion::Reporter.config.app_name} reported an exception at #{time_freeze.to_s}\n\nExceptionClass (#{error_message}):\n#{event_error.backtrace.join("\n")}\n\n",
+          from: hostname
         })
 
         Adhearsion::Plugin.init_plugins
