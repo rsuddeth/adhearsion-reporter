@@ -13,9 +13,9 @@ module Adhearsion
 
       def notify(ex)
         Pony.mail({
-          to: Adhearsion::Reporter.config.email.destination,
           subject: email_subject(ex),
-          body: exception_text(ex)
+          body: exception_text(ex),
+          from: hostname
         })
       end
 
@@ -36,7 +36,7 @@ module Adhearsion
       end
 
       def environment
-        Adhearsion.config.environment.to_s.upcase
+        Adhearsion.config.platform.environment.to_s.upcase
       end
 
       def hostname
