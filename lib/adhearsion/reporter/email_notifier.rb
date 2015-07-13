@@ -25,7 +25,7 @@ module Adhearsion
 
     private
       def email_subject(exception)
-        "[#{Adhearsion::Reporter.config.app_name}-#{environment}] Host: #{hostname} Exception: #{exception.class} (#{exception.message})"
+        "[#{Adhearsion::Reporter.config.app_name}-#{environment}] Exception: #{exception.class} (#{exception.message})"
       end
 
       def exception_text(exception)
