@@ -153,4 +153,46 @@ describe Adhearsion::Reporter do
       end
     end
   end
+
+  context "with multiple notifiers" do
+
+    class BaseNotifier
+      include Singleton
+
+      attr_reader :initialized, :notified
+
+      def init
+        @initialized = true
+      end
+
+      def notify(ex)
+        @notified = ex
+      end
+
+      def self.method_missing(m, *args, &block)
+        instance.send m, *args, &block
+      end
+    end
+
+    class MockNotifier < BaseNotifier; end
+    class AnotherMockNotifier < BaseNotifier; end
+
+    before(:each) do
+      Adhearsion::Reporter::config.notifiers = [MockNotifier, AnotherMockNotifier]
+      Adhearsion::Plugin.init_plugins
+      Adhearsion::Events.trigger_immediately :exception, ExceptionClass.new
+    end
+
+    it "calls init on each of the notifier instances" do
+      Adhearsion::Reporter::config.notifiers.each do |notifier|
+        expect(notifier.instance.initialized).to be(true)
+      end
+    end
+
+    it "logs an exception in each of the registered notifiers" do
+      Adhearsion::Reporter::config.notifiers.each do |notifier|
+        expect(notifier.instance.notified.class).to eq(ExceptionClass)
+      end
+    end
+  end
 end
