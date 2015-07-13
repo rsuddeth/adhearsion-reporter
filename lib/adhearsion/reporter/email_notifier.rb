@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 require 'pony'
+require 'socket'
 
 module Adhearsion
   class Reporter
