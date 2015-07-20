@@ -20,7 +20,10 @@ module Adhearsion
         api_key nil,                  desc: "The Airbrake/Errbit API key"
         url     "http://airbrake.io", desc: "Base URL for notification service"
         app_name "Adhearsion", desc: "Application name, used for reporting"
-        notifiers [Adhearsion::Reporter::AirbrakeNotifier],
+        notifier Adhearsion::Reporter::AirbrakeNotifier,
+          desc: "The class that will act as the notifier. Built-in classes are Adhearsion::Reporter::AirbrakeNotifier and Adhearsion::Reporter::NewrelicNotifier",
+          transform: Proc.new { |v| const_get(v.to_s) }
+        notifiers [],
           desc: "Collection of classes that will act as notifiers",
           transform: Proc.new { |v| v.split(',').map { |n| n.to_s.constantize } }
         enable true, desc: "Whether to send notifications - set to false to disable all notifications globally (useful for testing)"
@@ -36,10 +39,21 @@ module Adhearsion
       end
 
       init :reporter do
-        Reporter.config.notifiers.each_with_index do |notifier, idx|
-          notifier.init
+        # If the notifiers is empty (the default), then use whatever content 
+        # was in the "notifier" property. This will allow the default, or an
+        # explicitly set value to be used. Not that notifiers has been set, then
+        # the notifier will be ignored.
+        if Reporter.config.notifiers.empty?
+          Reporter.config.notifier.init
           Events.register_callback(:exception) do |e, logger|
-            Reporter.config.notifiers[idx].instance.notify e
+            Reporter.config.notifier.instance.notify e
+          end
+        else 
+          Reporter.config.notifiers.each_with_index do |notifier, idx|
+            notifier.init
+            Events.register_callback(:exception) do |e, logger|
+              Reporter.config.notifiers[idx].instance.notify e
+            end
           end
         end
       end
