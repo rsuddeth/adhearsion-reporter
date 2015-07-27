@@ -124,7 +124,7 @@ describe Adhearsion::Reporter do
     let(:error_message) { "Something bad" }
 
     before(:each) do
-      Adhearsion::Reporter.config.notifiers = [Adhearsion::Reporter::EmailNotifier]
+      Adhearsion::Reporter.config.notifier = Adhearsion::Reporter::EmailNotifier
       Adhearsion::Reporter.config.email = email_options
     end
 
@@ -178,6 +178,7 @@ describe Adhearsion::Reporter do
     class AnotherMockNotifier < BaseNotifier; end
 
     before(:each) do
+      Adhearsion::Events.clear_handlers(:exception)
       Adhearsion::Reporter::config.notifiers = [MockNotifier, AnotherMockNotifier]
       Adhearsion::Plugin.init_plugins
       Adhearsion::Events.trigger_immediately :exception, ExceptionClass.new

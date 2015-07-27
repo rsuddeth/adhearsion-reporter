@@ -49,10 +49,10 @@ module Adhearsion
             Reporter.config.notifier.instance.notify e
           end
         else 
-          Reporter.config.notifiers.each_with_index do |notifier, idx|
+          Reporter.config.notifiers.each do |notifier|
             notifier.init
             Events.register_callback(:exception) do |e, logger|
-              Reporter.config.notifiers[idx].instance.notify e
+              notifier.notify e
             end
           end
         end
